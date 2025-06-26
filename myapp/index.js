@@ -31,15 +31,32 @@ initializeDBAndServer();
 
 // Get Books API
 app.get("/books/", async (request, response) => {
-  const getBooksQuery = `
-  SELECT
-    *
-  FROM
-    book
-  ORDER BY
-    book_id;`;
-  const booksArray = await db.all(getBooksQuery);
-  response.send(booksArray);
+  let jwtToken = null;
+  const authHeader = request.headers["authorization"];
+  if (authHeader !== undefined) {
+    jwtToken = authHeader.split(" ")[1];
+  }
+  if (jwtToken === undefined) {
+    response.status(401);
+    response.send("Invalid Access Token");
+  } else {
+    jwt.verify(jwtToken, "srinutiru", async (error, user) => {
+      if (error) {
+        response.status(401);
+        response.send("Invalid Access Token");
+      } else {
+        const getBooksQuery = `
+            SELECT
+                *
+            FROM
+                book
+            ORDER BY
+                book_id;`;
+        const booksArray = await db.all(getBooksQuery);
+        response.send(booksArray);
+      }
+    });
+  }
 });
 
 // User Register API
